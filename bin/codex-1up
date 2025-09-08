@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+usage() {
+  cat <<USAGE
+codex-1up — wrapper
+
+Usage:
+  codex-1up install [install.sh args]
+  codex-1up agents --path <repo-path>
+  codex-1up doctor
+  codex-1up uninstall
+
+Examples:
+  codex-1up install --yes --vscode openai.codex --git-external-diff
+  codex-1up agents --path $PWD
+USAGE
+}
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  install)
+    exec "${ROOT_DIR}/install.sh" "$@"
+    ;;
+  agents)
+    # convenience: write AGENTS.md to a path
+    target=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --path) target="${2:-}"; shift ;;
+        *) ;;
+      esac
+      shift
+    done
+    if [ -z "$target" ]; then
+      echo "Provide --path <repo>"
+      exit 1
+    fi
+    if [ -d "$target" ]; then
+      path="$target/AGENTS.md"
+    else
+      path="$target"
+    fi
+    cp -f "${ROOT_DIR}/templates/AGENTS.md" "$path"
+    echo "Wrote ${path}"
+    ;;
+  doctor)
+    exec "${ROOT_DIR}/scripts/doctor.sh"
+    ;;
+  uninstall)
+    exec "${ROOT_DIR}/scripts/uninstall.sh"
+    ;;
+  *)
+    usage; exit 1 ;;
+esac
