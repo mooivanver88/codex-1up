@@ -1,4 +1,4 @@
-# codex-1up — One‑shot installer for OpenAI Codex CLI (GPT‑5) + pro tooling
+# codex-1up
 
 **codex-1up** gives individual developers a *production‑ready* Codex setup in minutes:
 
