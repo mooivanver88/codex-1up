@@ -11,6 +11,8 @@
 - ✅ Includes a **minimal AGENTS.md** so agents pick the right tool every time
 - ✅ Works on **macOS** and **Linux** (Windows via **WSL**)
 
+> ⚠️ **ATTENTION:** This tool is designed for experienced users. You can misconfigure or harm your system with this. Use it wisely.
+
 > **Why use this?**  
 > Because the best AI coding outcomes come from the *right tools + sane defaults*:
 > - **AST‑grep** for precise, structure‑aware refactors (no brittle grep)  
