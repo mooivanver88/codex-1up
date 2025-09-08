@@ -92,3 +92,17 @@ You can generate a starter file:
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Links
+
+- X/Twitter: [@kregenrek](https://x.com/kregenrek)
+- Bluesky: [@kevinkern.dev](https://bsky.app/profile/kevinkern.dev)
+
+## Courses
+- Learn Cursor AI: [Ultimate Cursor Course](https://www.instructa.ai/en/cursor-ai)
+- Learn to build software with AI: [AI Builder Hub](https://www.instructa.ai)
+
+## See my other projects:
+
+* [codefetch](https://github.com/regenrek/codefetch) - Turn code into Markdown for LLMs with one simple terminal command
+* [instructa](https://github.com/orgs/instructa/repositories) - Instructa Projects
