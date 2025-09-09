@@ -1,7 +1,7 @@
 # AGENTS.md — Tool Selection (TypeScript)
 
 - Find files: `fd -e ts -e tsx -E .d.ts`
-- Find text: `rg -n --hidden -g '!node_modules' '<text>'`
+- Find text: `rg`
 - Structured code search and codemods: `ast-grep`
   - Default languages:
     - `.ts` → `ast-grep --lang ts -p '<pattern>'`
