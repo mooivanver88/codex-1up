@@ -1,18 +1,17 @@
-# codex-1up
+# Codex CLI 1UP
 
 ![codex-1up banner](./public/banner.png)
 
 
-**codex-1up** gives individual developers a *production‑ready* Codex setup in minutes:
+**Codex 1UP** equips your Codex CLI coding agent with powerful tools.
 
 - ✅ Installs **Codex CLI** (`@openai/codex`)
 - ✅ Adds **AST‑aware refactor tools**: `ast-grep`
 - ✅ Adds fast shell power tools: `fd`, `ripgrep`, `rg`, `fzf`, `jq`, `yq`
-- ✅ Wires up **semantic diffs** with `difftastic`
-- ✅ Optionally writes **~/.codex/config.toml** with a profile you choose
-- ✅ Adds handy **shell aliases** (`cx`, `cxdiff`)
-- ✅ Includes a **minimal AGENTS.md** so agents pick the right tool every time
-- ✅ Works on **macOS** and **Linux** (Windows via **WSL**)
+- ✅ 4x **AGENTS.md** Templates: `generic` / `typescript` / `python` / `shell`
+- ✅ 3x **CODEX CLI** Templates: `safe` / `default` / `YOLO`
+- ✅ **semantic diffs** with `difftastic`
+- ✅ Adds **shell aliases** (`cx`, `cxdiff`)
 
 > ⚠️ **ATTENTION:** This tool is designed for experienced users. You can misconfigure or harm your system with this. Tested on: macOS with Homebrew, Node.js 22, and zsh. Other environments/os are untested. Backups are created during overwrite steps, but use at your own risk.
 
