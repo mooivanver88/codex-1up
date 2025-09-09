@@ -1,0 +1,17 @@
+# ~/.codex/config.toml  — YOLO
+
+model = "gpt-5"
+
+# Never ask for approval; just run.
+approval_policy = "never"
+
+# Disable sandboxing entirely: full disk + network access.
+sandbox_mode = "danger-full-access"
+
+[shell_environment_policy]
+# Hand over the entire environment as-is (including keys/tokens).
+inherit = "all"
+ignore_default_excludes = true
+# No extra excludes or include-only filters.
+# exclude = []
+# include_only = []

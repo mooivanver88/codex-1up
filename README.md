@@ -6,8 +6,8 @@
 - ✅ Adds **AST‑aware refactor tools**: `ast-grep` (TS/TSX ready)
 - ✅ Adds fast shell power tools: `fd`, `ripgrep` (`rg`), `fzf`, `jq`, `yq`
 - ✅ Wires up **semantic diffs** with `difftastic` (or `git-delta` fallback)
-- ✅ Writes **~/.codex/config.toml** with **web search enabled by default**
-- ✅ Adds handy **shell aliases** (`cx`, `cxdiff`, `tsgate`)
+- ✅ Optionally writes **~/.codex/config.toml** with a profile you choose
+- ✅ Adds handy **shell aliases** (`cx`, `cxdiff`) — with confirmation
 - ✅ Includes a **minimal AGENTS.md** so agents pick the right tool every time
 - ✅ Works on **macOS** and **Linux** (Windows via **WSL**)
 
@@ -34,6 +34,7 @@ cd codex-1up
 
 - `--yes`                  : non-interactive; accept safe defaults
 - `--dry-run`              : print what would happen, change nothing
+- `--skip-confirmation`    : skip interactive prompts (useful for CI)
 - `--shell auto|zsh|bash|fish`
 - `--git-external-diff`    : set difftastic as git's external diff (opt-in)
 - `--vscode EXT_ID`        : install a VS Code extension (e.g. `openai.codex`)
@@ -52,11 +53,20 @@ cd codex-1up
 | **fzf**                   | Fuzzy‑finder to select among many matches.                                              |
 | **jq** / **yq**           | Reliable JSON/YAML processing on the command line.                                      |
 | **difftastic**            | Semantic code diffs for reviewing AI edits; falls back to `git-delta` when unavailable. |
-| **shell aliases**         | `cx` (one‑shot Codex), `cxdiff` (semantic diffs), `tsgate` (typecheck+tests).           |
-| **\~/.codex/config.toml** | Default **web search ON**; safe approval/sandbox defaults; commented options to tune.   |
+| **shell aliases**         | `cx` (one‑shot Codex), `cxdiff` (semantic diffs).                                       |
+| **\~/.codex/config.toml** | Created from templates with profiles: SAFE / DEFAULT / YOLO / NO CHANGES option.        |
 | **AGENTS.md**             | Minimal rubric so agents consistently choose the right tool for each task.              |
 
 
+
+### Config profiles
+
+During install, you can choose one of the profiles for `~/.codex/config.toml`:
+
+- SAFE: Most restrictive; prompts on failures; sandboxed with limited env
+- DEFAULT (recommended): Balanced prompts and sandbox; network enabled in workspace
+- YOLO: Full access, never asks — includes explicit warnings and double‑confirm
+- NO CHANGES: Do not create or modify `~/.codex/config.toml`
 
 ### After installing
 
@@ -73,6 +83,17 @@ You can generate a starter file:
 # or during install
 ./install.sh --agents-md  # writes to $PWD/AGENTS.md
 ```
+
+## Git difftool (optional)
+
+If enabled, the installer configures:
+
+- `git difftool` with `difft` (from `difftastic`) for syntax‑aware diffs
+- Falls back to `delta` pager if `difftastic` is unavailable
+
+Notes:
+- Skips entirely if `git` is not installed
+- You can opt out during installation
 
 ## Doctor & Uninstall
 

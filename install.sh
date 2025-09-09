@@ -2,10 +2,22 @@
 set -euo pipefail
 
 VERSION="1.0.1"
-PROJECT="codex-boost"
+PROJECT="codex-1up"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# If ROOT_DIR is not the expected project directory, try to find it
+if [ ! -d "${ROOT_DIR}/templates" ]; then
+  # This might be running from within the project directory
+  if [ -d "./templates" ]; then
+    ROOT_DIR="$(pwd)"
+  fi
+fi
 
 DRY_RUN=false
 ASSUME_YES=false
+SKIP_CONFIRMATION=false
 SHELL_TARGET="auto"
 VSCE_ID=""
 NO_VSCODE=false
@@ -29,7 +41,14 @@ info()  { log "${BOLD}${1}${RESET}"; }
 ok()    { log "${GREEN}✔${RESET} ${1}"; }
 warn()  { log "${YELLOW}⚠${RESET} ${1}"; }
 err()   { log "${RED}✖${RESET} ${1}"; }
-run()   { if $DRY_RUN; then echo "[dry-run] $*"; else eval "$@" >>"$LOG_FILE" 2>&1; fi }
+# Safe runner that does not eval the command string, preventing unintended expansion
+# Use: run cmd arg1 arg2 ... (space-separated args)
+run()   {
+  if $DRY_RUN; then
+    printf "[dry-run]"; for a in "$@"; do printf " %q" "$a"; done; printf "\n"; return 0
+  fi
+  "$@" >>"$LOG_FILE" 2>&1
+}
 
 usage() {
   cat <<USAGE
@@ -39,6 +58,7 @@ Usage: ./install.sh [options]
 
   --yes                     non-interactive; accept safe defaults
   --dry-run                 print actions without making changes
+  --skip-confirmation       skip user prompts for system changes
   --shell auto|zsh|bash|fish
   --vscode EXT_ID           install VS Code extension id (e.g. openai.codex)
   --no-vscode               skip VS Code extension checks
@@ -53,6 +73,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --yes) ASSUME_YES=true ;;
     --dry-run) DRY_RUN=true ;;
+    --skip-confirmation) SKIP_CONFIRMATION=true ;;
     --shell) SHELL_TARGET="${2:-auto}"; shift ;;
     --vscode) VSCE_ID="${2:-}"; shift ;;
     --no-vscode) NO_VSCODE=true ;;
@@ -69,6 +90,7 @@ done
 
 confirm() {
   $ASSUME_YES && return 0
+  $SKIP_CONFIRMATION && return 0
   read -r -p "$1 [y/N] " ans || true
   [[ "${ans}" =~ ^[Yy]$ ]]
 }
@@ -191,17 +213,28 @@ ensure_tools() {
 }
 
 configure_git() {
+  # Skip entirely if git is not present
+  if ! need_cmd git; then
+    info "git not found; skipping git configuration"
+    return 0
+  fi
+
+  if ! confirm "Configure git diff tools for better syntax-aware code diffs (recommended for developers)?"; then
+    info "Skipping git configuration"
+    return 0
+  fi
+
   info "Configuring git difftool aliases"
   if need_cmd difft || need_cmd difftastic; then
-    run git config --global difftool.difftastic.cmd 'difft "$LOCAL" "$REMOTE"'
-    run git config --global difftool.prompt false
+    run git config --global difftool.difftastic.cmd 'difft "$LOCAL" "$REMOTE"' || warn "Failed to configure difftastic difftool"
+    run git config --global difftool.prompt false || warn "Failed to disable difftool prompt"
     ok "Configured git difftool 'difftastic'"
     if $GIT_EXTERNAL_DIFF; then
-      run git config --global diff.external difft
+      run git config --global diff.external difft || warn "Failed to set git external diff"
       ok "Set git diff.external = difft"
     fi
   elif need_cmd delta; then
-    run git config --global core.pager delta
+    run git config --global core.pager delta || warn "Failed to configure delta pager"
     ok "Configured git pager to delta (fallback)"
   else
     warn "No difftastic or delta found; git diff will remain default"
@@ -230,6 +263,17 @@ target_shell_rc() {
 configure_shell() {
   local rc_file
   rc_file="$(target_shell_rc)"
+
+  info "The following aliases will be added to ${rc_file}:"
+  echo "  cx='codex exec'          # Run codex commands"
+  echo "  cxdiff='git difftool -y' # Launch git difftool"
+  echo "  fd='fdfind'              # fd-find alias (if applicable)"
+
+  if ! confirm "Add these aliases to your shell config?"; then
+    info "Skipping shell alias configuration"
+    return 0
+  fi
+
   info "Updating shell rc: ${rc_file}"
   mkdir -p "$(dirname "$rc_file")"
 
@@ -237,16 +281,15 @@ configure_shell() {
   local end="# <<< ${PROJECT} <<<"
   local block
   block=$(cat <<'EOF'
-# >>> codex-boost >>>
+# >>> codex-1up >>>
 # Aliases
 alias cx='codex exec'
 alias cxdiff='git difftool -y'
-alias tsgate='pnpm typecheck && pnpm test'
 # fd alias on Debian/Ubuntu
 if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
   alias fd='fdfind'
 fi
-# <<< codex-boost <<<
+# <<< codex-1up <<<
 EOF
   )
 
@@ -257,14 +300,13 @@ EOF
 
   if [[ "$rc_file" == *fish* ]]; then
     block=$(cat <<'EOF'
-# >>> codex-boost >>>
+# >>> codex-1up >>>
 alias cx 'codex exec'
 alias cxdiff 'git difftool -y'
-alias tsgate 'pnpm typecheck && pnpm test'
 if type -q fdfind; and not type -q fd
   alias fd 'fdfind'
 end
-# <<< codex-boost <<<
+# <<< codex-1up <<<
 EOF
     )
   fi
@@ -285,54 +327,82 @@ EOF
 
 write_codex_config() {
   local cfg="${HOME}/.codex/config.toml"
+  local template_dir="${ROOT_DIR}/templates/configs"
+
+  # Check if existing config exists
   if [ -f "$cfg" ]; then
-    ok "~/.codex/config.toml already exists"
-    return 0
+    warn "~/.codex/config.toml already exists"
+
+    # Ask user what to do
+    if confirm "Replace existing config with new template? (existing will be backed up)"; then
+      # Create backup
+      local backup="${cfg}.backup.$(date +%Y%m%d_%H%M%S)"
+      run cp "$cfg" "$backup"
+      info "Backed up existing config to: ${backup}"
+    else
+      info "Keeping existing config unchanged"
+      return 0
+    fi
   fi
 
-  info "Writing ~/.codex/config.toml (web_search enabled)"
+  # Prompt user to choose config profile
+  info "Choose your codex-1up configuration profile:"
+  echo ""
+  echo "  1) SAFE     - Most restrictive, asks for approval when commands fail"
+  echo "                (Recommended for high-security environments)"
+  echo ""
+  echo "  2) DEFAULT  - Balanced approach, asks for approval when needed"
+  echo "                (Recommended for most users - good security/usability balance)"
+  echo ""
+  echo "  3) YOLO     - Full access, never asks for approval"
+  echo "                ⚠️  WARNING: Allows codex full disk + network access!"
+  echo "                ⚠️  WARNING: Inherits ALL environment variables (including secrets)!"
+  echo "                ⚠️  Only use in trusted, sandboxed environments!"
+  echo ""
+  echo "  4) NO CHANGES - Do not create or modify ~/.codex/config.toml"
+  echo "                (You can manage it yourself later)"
+
+  local selected_profile="default"
+  if ! $SKIP_CONFIRMATION; then
+    echo -n "Choose profile [1-4] (default: 2/DEFAULT): "
+    read -r choice || choice="2"
+
+    case "$choice" in
+      1|"safe"|"SAFE") selected_profile="safe" ;;
+      2|"default"|"DEFAULT"|""|"2") selected_profile="default" ;;
+      3|"yolo"|"YOLO")
+        warn "⚠️  You selected YOLO mode!"
+        warn "⚠️  This gives codex FULL access to your system and ALL environment variables!"
+        if ! confirm "Are you sure you want to proceed with YOLO mode?"; then
+          info "Falling back to DEFAULT profile"
+          selected_profile="default"
+        else
+          selected_profile="yolo"
+        fi
+        ;;
+      4|"none"|"no"|"skip")
+        info "User chose to make no changes to ~/.codex/config.toml"
+        return 0
+        ;;
+      *) 
+        warn "Invalid choice, using DEFAULT profile"
+        selected_profile="default"
+        ;;
+    esac
+  fi
+
+  # Use selected template
+  local template_file="${template_dir}/codex-${selected_profile}.toml"
+  if [ ! -f "$template_file" ]; then
+    err "Template file not found: ${template_file}"
+    return 1
+  fi
+
+  info "Creating config using ${selected_profile} profile"
   mkdir -p "${HOME}/.codex"
-  cat > "$cfg" <<'CFG'
-# ~/.codex/config.toml — created by codex-boost
+  run cp "$template_file" "$cfg"
 
-# Core
-model = "gpt-5"
-approval_policy = "on-request"       # untrusted|on-failure|on-request|never
-sandbox_mode   = "workspace-write"   # read-only|workspace-write|danger-full-access
-
-[tools]
-web_search = true                    # enable the native web-search tool by default
-
-# Optional privacy & UX
-# disable_response_storage = true     # zero-data-retention mode
-# file_opener = "vscode"              # vscode|vscode-insiders|windsurf|cursor|none
-
-# Reasoning / verbosity (GPT‑5 family)
-# model_reasoning_effort = "medium"   # minimal|low|medium|high|none
-# model_verbosity = "medium"          # low|medium|high
-# model_reasoning_summary = "auto"    # auto|concise|detailed|none
-
-# Sandbox network: keep off unless you need arbitrary HTTP (curl, etc.)
-# [sandbox_workspace_write]
-# network_access = false
-
-# Example: MCP server
-# [mcp_servers.server-name]
-# command = "npx"
-# args = ["-y", "mcp-remote", "https://example.com/api/mcp"]
-
-# Example: Azure provider profile
-# [profiles.azure]
-# model = "gpt-5"
-# model_provider = "azure"
-# [model_providers.azure]
-# name = "Azure"
-# base_url = "https://<resource>.openai.azure.com/openai"
-# env_key = "AZURE_OPENAI_API_KEY"
-# query_params = { api-version = "2025-04-01-preview" }
-# wire_api = "responses"
-CFG
-  ok "Wrote ${cfg}"
+  ok "Created ~/.codex/config.toml with ${selected_profile} profile"
 }
 
 maybe_install_vscode_ext() {
@@ -345,6 +415,12 @@ maybe_install_vscode_ext() {
     warn "'code' (VS Code) not in PATH; skipping extension install"
     return 0
   fi
+
+  if ! confirm "Install VS Code extension: ${VSCE_ID}?"; then
+    info "Skipping VS Code extension installation"
+    return 0
+  fi
+
   info "Installing VS Code extension: ${VSCE_ID}"
   run code --install-extension "${VSCE_ID}" --force
   ok "VS Code extension '${VSCE_ID}' installed (or already present)"
@@ -354,6 +430,12 @@ maybe_write_agents() {
   if [ -z "${AGENTS_TARGET}" ]; then return 0; fi
   local path="${AGENTS_TARGET}"
   if [ -d "$path" ]; then path="${path%/}/AGENTS.md"; fi
+
+  if ! confirm "Write starter AGENTS.md file to: ${path}?"; then
+    info "Skipping AGENTS.md creation"
+    return 0
+  fi
+
   info "Writing starter AGENTS.md to: ${path}"
   if $DRY_RUN; then echo "[dry-run] write AGENTS.md to ${path}"; else
     cat > "${path}" <<'AGENTS'

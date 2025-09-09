@@ -1,10 +1,16 @@
-# ~/.codex/config.toml (created by codex-1up if missing)
+# ~/.codex/config.toml — created by codex-1up
 # Adjust to your liking. See Codex CLI docs for full options.
 
 # Core
 model = "gpt-5"
 approval_policy = "on-request"       # untrusted|on-failure|on-request|never
 sandbox_mode   = "workspace-write"   # read-only|workspace-write|danger-full-access
+
+# Extra settings that only apply when `sandbox = "workspace-write"`.
+[sandbox_workspace_write]
+# Allow the command being run inside the sandbox to make outbound network
+# requests. Disabled by default.
+network_access = true
 
 [tools] 
 web_search = true

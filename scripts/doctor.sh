@@ -4,7 +4,7 @@ set -euo pipefail
 need() { command -v "$1" >/dev/null 2>&1; }
 check() { if need "$1"; then echo "✔ $1"; else echo "✖ $1 (missing)"; fi }
 
-echo "codex-boost doctor"
+echo "codex-1up doctor"
 echo "--- binaries ---"
 for c in node npm codex ast-grep fd fdfind rg fzf jq yq difft delta code; do
   check "$c"
@@ -31,7 +31,7 @@ fi
 echo "--- shell rc hints ---"
 echo "SHELL=$SHELL"
 for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.config/fish/config.fish"; do
-  [ -f "$rc" ] && grep -q ">>> codex-boost >>>" "$rc" && echo "Found codex-boost block in $rc"
+  [ -f "$rc" ] && grep -q ">>> codex-1up >>>" "$rc" && echo "Found codex-1up block in $rc"
 done
 
 echo "Done."

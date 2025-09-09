@@ -15,7 +15,7 @@ Usage:
   codex-1up uninstall
 
 Examples:
-  codex-1up install --yes --vscode openai.codex --git-external-diff
+  codex-1up install --yes --skip-confirmation --vscode openai.codex --git-external-diff
   codex-1up agents --path $PWD
 USAGE
 }
