@@ -156,8 +156,46 @@ ensure_node() {
 }
 
 install_npm_globals() {
-  info "Installing global npm packages (@openai/codex, @ast-grep/cli)"
-  run npm install -g @openai/codex @ast-grep/cli
+  info "Checking global npm packages (@openai/codex, @ast-grep/cli)"
+
+  local pkgs=("@openai/codex" "@ast-grep/cli")
+  local updates=()
+
+  for pkg in "${pkgs[@]}"; do
+    # Fetch latest version from registry
+    local latest
+    latest=$(npm view "$pkg" version 2>/dev/null || true)
+    if [ -z "$latest" ]; then
+      warn "Could not fetch latest version for $pkg; skipping upgrade check"
+      continue
+    fi
+
+    # Detect installed version using npm ls --json and parse with node
+    local installed
+    installed=$(npm ls -g "$pkg" --depth=0 --json 2>/dev/null | node -e '
+let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{
+  try{const j=JSON.parse(s); const name=process.argv[1]; const dep=j.dependencies&&j.dependencies[name]; console.log(dep?dep.version:"");}
+  catch{console.log("")}
+});' "$pkg")
+
+    if [ -z "$installed" ]; then
+      info "$pkg not installed; will install @$latest"
+      updates+=("$pkg@$latest")
+    elif [ "$installed" != "$latest" ]; then
+      info "$pkg $installed -> $latest"
+      updates+=("$pkg@$latest")
+    else
+      ok "$pkg up-to-date ($installed)"
+    fi
+  done
+
+  if [ ${#updates[@]} -gt 0 ]; then
+    info "Installing/updating global npm packages"
+    run npm install -g "${updates[@]}"
+  else
+    ok "Global npm packages are up-to-date"
+  fi
+
   if need_cmd codex; then ok "Codex CLI installed"; else err "Codex CLI not found after install"; fi
   if need_cmd ast-grep; then ok "ast-grep installed"; else warn "ast-grep not found; check npm global path"; fi
 }
@@ -329,22 +367,6 @@ write_codex_config() {
   local cfg="${HOME}/.codex/config.toml"
   local template_dir="${ROOT_DIR}/templates/configs"
 
-  # Check if existing config exists
-  if [ -f "$cfg" ]; then
-    warn "~/.codex/config.toml already exists"
-
-    # Ask user what to do
-    if confirm "Replace existing config with new template? (existing will be backed up)"; then
-      # Create backup
-      local backup="${cfg}.backup.$(date +%Y%m%d_%H%M%S)"
-      run cp "$cfg" "$backup"
-      info "Backed up existing config to: ${backup}"
-    else
-      info "Keeping existing config unchanged"
-      return 0
-    fi
-  fi
-
   # Prompt user to choose config profile
   info "Choose your codex-1up configuration profile:"
   echo ""
@@ -398,12 +420,48 @@ write_codex_config() {
     return 1
   fi
 
+  # If an existing config is present, confirm overwrite now (with profile context)
+  if [ -f "$cfg" ]; then
+    warn "~/.codex/config.toml already exists"
+    if confirm "Overwrite with the '${selected_profile}' template? (existing will be backed up)"; then
+      local backup="${cfg}.backup.$(date +%Y%m%d_%H%M%S)"
+      run cp "$cfg" "$backup"
+      info "Backed up existing config to: ${backup}"
+    else
+      info "Keeping existing config unchanged"
+      return 0
+    fi
+  fi
+
   info "Creating config using ${selected_profile} profile"
   mkdir -p "${HOME}/.codex"
   run cp "$template_file" "$cfg"
 
   ok "Created ~/.codex/config.toml with ${selected_profile} profile"
   info "See config options: https://github.com/openai/codex/blob/main/docs/config.md"
+}
+
+# Prompt to create a global AGENTS.md in ~/.codex
+maybe_prompt_global_agents() {
+  local path="${HOME}/.codex/AGENTS.md"
+  if ! confirm "Create a global AGENTS.md at ~/.codex/AGENTS.md for personal guidance?"; then
+    return 0
+  fi
+  mkdir -p "${HOME}/.codex"
+  if [ -f "$path" ]; then
+    warn "${path} already exists"
+    if confirm "Replace existing AGENTS.md with template? (existing will be backed up)"; then
+      local backup="${path}.backup.$(date +%Y%m%d_%H%M%S)"
+      run cp "$path" "$backup"
+      info "Backed up existing AGENTS.md to: ${backup}"
+    else
+      info "Keeping existing AGENTS.md unchanged"
+      return 0
+    fi
+  fi
+  info "Writing global AGENTS.md to: ${path}"
+  run cp "${ROOT_DIR}/templates/AGENTS.md" "$path"
+  ok "Wrote ${path}"
 }
 
 maybe_install_vscode_ext() {
@@ -435,6 +493,19 @@ maybe_write_agents() {
   if ! confirm "Write starter AGENTS.md file to: ${path}?"; then
     info "Skipping AGENTS.md creation"
     return 0
+  fi
+
+  # If targeting global location, handle overwrite with backup like config
+  if [ -f "$path" ]; then
+    warn "${path} already exists"
+    if confirm "Replace existing AGENTS.md with template? (existing will be backed up)"; then
+      local backup="${path}.backup.$(date +%Y%m%d_%H%M%S)"
+      run cp "$path" "$backup"
+      info "Backed up existing AGENTS.md to: ${backup}"
+    else
+      info "Keeping existing AGENTS.md unchanged"
+      return 0
+    fi
   fi
 
   info "Writing starter AGENTS.md to: ${path}"
@@ -472,11 +543,15 @@ main() {
   configure_git
   configure_shell
   write_codex_config
+  maybe_prompt_global_agents
   maybe_install_vscode_ext
   maybe_write_agents
 
   ok "All done. Open a new shell or 'source' your rc file to load aliases."
-  info "Try:  codex   # sign in; then ask it to plan a refactor"
+  info "Next steps:"
+  info "  1) codex    # sign in; then ask it to plan a refactor"
+  info "  2) ./bin/codex-1up agents --path $PWD   # write a starter AGENTS.md to your repo"
+  info "  3) Review ~/.codex/config.toml (see: https://github.com/openai/codex/blob/main/docs/config.md)"
 }
 
 main "$@"

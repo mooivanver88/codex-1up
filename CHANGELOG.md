@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.1]
 
 ### Added
 - Interactive config profile selection when creating `~/.codex/config.toml`:
@@ -26,5 +26,21 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Crash during git difftool setup caused by expansion of `$LOCAL`/`$REMOTE`.
 - Project root detection when calling installer via wrapper.
+
+
+## [0.2] - 2025-09-09
+
+### Added
+- Installer now prints a link to the Codex config reference after creating `~/.codex/config.toml`: `https://github.com/openai/codex/blob/main/docs/config.md`.
+- Installer prompts to create a global `~/.codex/AGENTS.md` (with backup if it exists).
+
+### Docs
+- README: Added Codex config reference link in the install table and in the Config profiles section, pointing to `https://github.com/openai/codex/blob/main/docs/config.md`.
+ - README: Added "Global guidance with AGENTS.md" section with link to [Memory with AGENTS.md](https://github.com/openai/codex/blob/main/docs/getting-started.md#memory-with-agentsmd).
+ - README: Added "Upgrade" section with steps to update and re-run installer.
+
+### Changed
+- Config flow: choose profile first, then confirm overwrite (with backup).
+- NPM globals install flow now checks installed vs latest and only installs when needed.
 
 

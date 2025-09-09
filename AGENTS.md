@@ -1,4 +1,4 @@
-# When you need to call tools from the shell, **use this rubric**:
+# When you need to call tools from the shell, use this rubric:
 
 - Find Files: `fd`
 - Find Text: `rg` (ripgrep)
