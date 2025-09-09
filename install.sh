@@ -24,6 +24,7 @@ NO_VSCODE=false
 GIT_EXTERNAL_DIFF=false
 INSTALL_NODE="nvm"
 AGENTS_TARGET=""
+AGENTS_TEMPLATE="default"
 
 LOG_DIR="${HOME}/.${PROJECT}"
 mkdir -p "${LOG_DIR}"
@@ -65,6 +66,7 @@ Usage: ./install.sh [options]
   --git-external-diff       set difftastic as git's external diff (opt-in)
   --install-node nvm|brew|skip   how to install Node if missing (default: nvm)
   --agents-md [PATH]        write starter AGENTS.md to PATH (default: \$PWD/AGENTS.md)
+  --agents-template default|typescript|python|shell  template variant for AGENTS.md (default: default)
   -h, --help                show help
 USAGE
 }
@@ -82,6 +84,8 @@ while [ $# -gt 0 ]; do
     --agents-md)
       if [ "${2:-}" ] && [[ ! "${2}" =~ ^-- ]]; then AGENTS_TARGET="${2}"; shift; else AGENTS_TARGET="$PWD/AGENTS.md"; fi
       ;;
+    --agents-template)
+      AGENTS_TEMPLATE="${2:-default}"; shift ;;
     -h|--help) usage; exit 0 ;;
     *) warn "Unknown arg: $1"; usage; exit 1 ;;
   esac
@@ -443,25 +447,69 @@ write_codex_config() {
 
 # Prompt to create a global AGENTS.md in ~/.codex
 maybe_prompt_global_agents() {
-  local path="${HOME}/.codex/AGENTS.md"
-  if ! confirm "Create a global AGENTS.md at ~/.codex/AGENTS.md for personal guidance?"; then
+  # Interactive selection similar to config profile flow
+  local target_path="${HOME}/.codex/AGENTS.md"
+
+  # In fully non-interactive mode, skip creating global AGENTS.md
+  if $SKIP_CONFIRMATION; then
+    info "Skipping global AGENTS.md creation (non-interactive mode)"
     return 0
   fi
+
+  info "Do you want to create a global AGENTS.md for personal guidance at ~/.codex/AGENTS.md?"
+  echo ""
+  echo "  1) default     - Generic rubric (works for most repos)"
+  echo "  2) typescript  - TS/TSX-focused rubric with ast-grep examples"
+  echo "  3) python      - Python-focused rubric and tooling notes (ruff, mypy, pytest)"
+  echo "  4) shell       - Shell/Bash-focused rubric with shellcheck/shfmt/bats tips"
+  echo "  5) NONE        - Do not create ~/.codex/AGENTS.md"
+
+  local choice="5"
+  echo -n "Choose template [1-5] (default: 5/NONE): "
+  read -r choice || choice="5"
+
+  local selected_template=""
+  case "$choice" in
+    1|"default"|"DEFAULT") selected_template="default" ;;
+    2|"typescript"|"TYPESCRIPT") selected_template="typescript" ;;
+    3|"python"|"PYTHON") selected_template="python" ;;
+    4|"shell"|"SHELL") selected_template="shell" ;;
+    5|"none"|"NONE"|"") selected_template="" ;;
+    *)
+      warn "Invalid choice; skipping global AGENTS.md creation"
+      selected_template=""
+      ;;
+  esac
+
+  # User chose not to create
+  if [ -z "$selected_template" ]; then
+    info "Not creating ~/.codex/AGENTS.md"
+    return 0
+  fi
+
   mkdir -p "${HOME}/.codex"
-  if [ -f "$path" ]; then
-    warn "${path} already exists"
-    if confirm "Replace existing AGENTS.md with template? (existing will be backed up)"; then
-      local backup="${path}.backup.$(date +%Y%m%d_%H%M%S)"
-      run cp "$path" "$backup"
-      info "Backed up existing AGENTS.md to: ${backup}"
-    else
+
+  # If exists, ask to overwrite with backup
+  if [ -f "$target_path" ]; then
+    warn "${target_path} already exists"
+    read -r -p "Overwrite existing file? (backup will be created) [y/N] " ans || ans="n"
+    if [[ ! "$ans" =~ ^[Yy]$ ]]; then
       info "Keeping existing AGENTS.md unchanged"
       return 0
     fi
+    local backup="${target_path}.backup.$(date +%Y%m%d_%H%M%S)"
+    run cp "$target_path" "$backup"
+    info "Backed up existing AGENTS.md to: ${backup}"
   fi
-  info "Writing global AGENTS.md to: ${path}"
-  run cp "${ROOT_DIR}/templates/AGENTS.md" "$path"
-  ok "Wrote ${path}"
+
+  local src="${ROOT_DIR}/templates/agent-templates/AGENTS-${selected_template}.md"
+  if [ ! -f "$src" ]; then
+    warn "Unknown agents template '${selected_template}', falling back to 'default'"
+    src="${ROOT_DIR}/templates/agent-templates/AGENTS-default.md"
+  fi
+  info "Writing global AGENTS.md to: ${target_path} (template: ${selected_template})"
+  run cp "$src" "$target_path"
+  ok "Wrote ${target_path}"
 }
 
 maybe_install_vscode_ext() {
@@ -510,26 +558,13 @@ maybe_write_agents() {
 
   info "Writing starter AGENTS.md to: ${path}"
   if $DRY_RUN; then echo "[dry-run] write AGENTS.md to ${path}"; else
-    cat > "${path}" <<'AGENTS'
-# AGENTS.md — Tool Selection for Shell Interactions
-
-When you need to call tools from the shell, **use this rubric**:
-
-- **Is it about finding FILES?** use `fd`
-- **Is it about finding TEXT/strings?** use `rg`
-- **Is it about finding CODE STRUCTURE?** use `ast-grep`
-  - **Default to TypeScript:**  
-    - `.ts` → `ast-grep --lang ts -p '<pattern>'`
-    - `.tsx` (React) → `ast-grep --lang tsx -p '<pattern>'`
-  - For other languages, set `--lang` appropriately (e.g., `--lang rust`).
-- **Need to SELECT from multiple results?** pipe to `fzf`
-- **Interacting with JSON?** use `jq`
-- **Interacting with YAML or XML?** use `yq`
-
-You run in an environment where **`ast-grep` is available**.
-Whenever a search requires **syntax‑aware / structural matching**, **default to `ast-grep`** with the correct `--lang`, and **avoid** falling back to text‑only tools like `rg` or `grep` unless a plain‑text search is explicitly requested.
-AGENTS
-    ok "Wrote AGENTS.md"
+    local src="${ROOT_DIR}/templates/agent-templates/AGENTS-${AGENTS_TEMPLATE}.md"
+    if [ ! -f "$src" ]; then
+      warn "Unknown agents template '${AGENTS_TEMPLATE}', falling back to 'default'"
+      src="${ROOT_DIR}/templates/agent-templates/AGENTS-default.md"
+    fi
+    run cp "$src" "$path"
+    ok "Wrote AGENTS.md (template: ${AGENTS_TEMPLATE})"
   fi
 }
 

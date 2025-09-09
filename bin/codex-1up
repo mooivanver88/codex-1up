@@ -10,13 +10,13 @@ codex-1up — wrapper
 
 Usage:
   codex-1up install [install.sh args]
-  codex-1up agents --path <repo-path>
+  codex-1up agents --path <repo-path> [--template default|typescript|python|shell]
   codex-1up doctor
   codex-1up uninstall
 
 Examples:
   codex-1up install --yes --skip-confirmation --vscode openai.codex --git-external-diff
-  codex-1up agents --path $PWD
+  codex-1up agents --path $PWD --template default
 USAGE
 }
 
@@ -28,9 +28,11 @@ case "$cmd" in
   agents)
     # convenience: write AGENTS.md to a path
     target=""
+    template="default"
     while [ $# -gt 0 ]; do
       case "$1" in
         --path) target="${2:-}"; shift ;;
+        --template) template="${2:-default}"; SET_BY_FLAG=1; shift ;;
         *) ;;
       esac
       shift
@@ -44,8 +46,46 @@ case "$cmd" in
     else
       path="$target"
     fi
-    cp -f "${ROOT_DIR}/templates/AGENTS.md" "$path"
-    echo "Wrote ${path}"
+    # If no explicit template flag provided, offer interactive selection
+    if [ "$template" = "default" ] && [ -z "${SET_BY_FLAG:-}" ]; then
+      echo "Select AGENTS.md template:"
+      echo "  1) default"
+      echo "  2) typescript"
+      echo "  3) python"
+      echo "  4) shell"
+      echo -n "Choose [1-4] (default: 1): "
+      read -r choice || choice="1"
+      case "$choice" in
+        1|"default"|"DEFAULT"|"") template="default" ;;
+        2|"typescript"|"TYPESCRIPT") template="typescript" ;;
+        3|"python"|"PYTHON") template="python" ;;
+        4|"shell"|"SHELL") template="shell" ;;
+        *) echo "Invalid choice, using default"; template="default" ;;
+      esac
+    fi
+
+    src="${ROOT_DIR}/templates/agent-templates/AGENTS-${template}.md"
+    if [ ! -f "$src" ]; then
+      echo "Unknown template: ${template}"
+      echo "Available: default, typescript, python, shell"
+      exit 1
+    fi
+
+    # Overwrite prompt with backup if file exists
+    if [ -f "$path" ]; then
+      echo "${path} already exists"
+      read -r -p "Overwrite it? (backup will be created) [y/N] " ans || ans="n"
+      if [[ ! "$ans" =~ ^[Yy]$ ]]; then
+        echo "Keeping existing AGENTS.md unchanged"
+        exit 0
+      fi
+      backup="${path}.backup.$(date +%Y%m%d_%H%M%S)"
+      cp "$path" "$backup"
+      echo "Backed up existing AGENTS.md to: ${backup}"
+    fi
+
+    cp -f "$src" "$path"
+    echo "Wrote ${path} (template: ${template})"
     ;;
   doctor)
     exec "${ROOT_DIR}/scripts/doctor.sh"

@@ -1,24 +1,28 @@
 # codex-1up
 
+![codex-1up banner](./public/banner.png)
+
+
 **codex-1up** gives individual developers a *production‑ready* Codex setup in minutes:
 
-- ✅ Installs **Codex CLI** (`@openai/codex`) and signs you in
-- ✅ Adds **AST‑aware refactor tools**: `ast-grep` (TS/TSX ready)
-- ✅ Adds fast shell power tools: `fd`, `ripgrep` (`rg`), `fzf`, `jq`, `yq`
-- ✅ Wires up **semantic diffs** with `difftastic` (or `git-delta` fallback)
+- ✅ Installs **Codex CLI** (`@openai/codex`)
+- ✅ Adds **AST‑aware refactor tools**: `ast-grep`
+- ✅ Adds fast shell power tools: `fd`, `ripgrep`, `rg`, `fzf`, `jq`, `yq`
+- ✅ Wires up **semantic diffs** with `difftastic`
 - ✅ Optionally writes **~/.codex/config.toml** with a profile you choose
-- ✅ Adds handy **shell aliases** (`cx`, `cxdiff`) — with confirmation
+- ✅ Adds handy **shell aliases** (`cx`, `cxdiff`)
 - ✅ Includes a **minimal AGENTS.md** so agents pick the right tool every time
 - ✅ Works on **macOS** and **Linux** (Windows via **WSL**)
 
-> ⚠️ **ATTENTION:** This tool is designed for experienced users. You can misconfigure or harm your system with this. Use it wisely.
+> ⚠️ **ATTENTION:** This tool is designed for experienced users. You can misconfigure or harm your system with this. Tested on: macOS with Homebrew, Node.js 22, and zsh. Other environments/os are untested. Backups are created during overwrite steps, but use at your own risk.
 
+> &nbsp;
 > **Why use this?**  
-> Because the best AI coding outcomes come from the *right tools + sane defaults*:
 > - **AST‑grep** for precise, structure‑aware refactors (no brittle grep)  
 > - **difftastic** for human‑readable diffs of AI changes  
 > - **web search ON** by default so the agent can look things up when needed  
 > - A **clear AGENTS.md rubric** so the agent consistently chooses `fd/rg/ast-grep/fzf/jq/yq` correctly
+> &nbsp;
 
 ## Quick start
 
@@ -39,6 +43,7 @@ cd codex-1up
 - `--git-external-diff`    : set difftastic as git's external diff (opt-in)
 - `--vscode EXT_ID`        : install a VS Code extension (e.g. `openai.codex`)
 - `--agents-md [PATH]`     : write a starter `AGENTS.md` to PATH (default: `$PWD/AGENTS.md`)
+- `--agents-template T`    : choose `AGENTS.md` template: `default|typescript|python|shell` (default: `default`)
 - `--no-vscode`            : skip VS Code extension checks
 - `--install-node nvm|brew|skip` : how to install Node.js if missing (default: `nvm`)
 
@@ -57,6 +62,15 @@ cd codex-1up
 | **\~/.codex/config.toml** | Created from templates with profiles: SAFE / DEFAULT / YOLO / NO CHANGES option. See [Codex config reference](https://github.com/openai/codex/blob/main/docs/config.md). |
 | **AGENTS.md**             | Minimal per‑repo rubric; installer can also create global `~/.codex/AGENTS.md`.         |
 
+
+# Templates available:
+
+| Template   | Description                                                   |
+| ---------- | ------------------------------------------------------------- |
+| default    | Generic rubric (works for most repos)                         |
+| typescript | TS/TSX‑focused rubric with ast-grep examples                  |
+| python     | Python‑focused rubric and tooling notes (ruff, mypy, pytest)  |
+| shell      | Shell/Bash‑focused rubric with shellcheck/shfmt/bats tips     |
 
 
 ### Config profiles
@@ -79,8 +93,8 @@ For all available options and advanced usage, see the [Codex config reference](h
 Recommended next step:
 
 ```bash
-./bin/codex-1up agents --path /path/to/your/repo
-# writes AGENTS.md using the template rubric
+./bin/codex-1up agents --path /path/to/your/repo --template default
+# writes AGENTS.md using the selected template (default|typescript|python|shell)
 ```
 
 ## `AGENTS.md` in your repo
@@ -88,9 +102,9 @@ Recommended next step:
 You can generate a starter file:
 
 ```bash
-./bin/codex-1up agents --path /path/to/your/repo
+./bin/codex-1up agents --path /path/to/your/repo --template default
 # or during install
-./install.sh --agents-md  # writes to $PWD/AGENTS.md
+./install.sh --agents-md --agents-template default  # writes to $PWD/AGENTS.md using selected template
 ```
 
 ## Global guidance with AGENTS.md (optional)
