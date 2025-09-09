@@ -54,7 +54,7 @@ cd codex-1up
 | **jq** / **yq**           | Reliable JSON/YAML processing on the command line.                                      |
 | **difftastic**            | Semantic code diffs for reviewing AI edits; falls back to `git-delta` when unavailable. |
 | **shell aliases**         | `cx` (one‑shot Codex), `cxdiff` (semantic diffs).                                       |
-| **\~/.codex/config.toml** | Created from templates with profiles: SAFE / DEFAULT / YOLO / NO CHANGES option.        |
+| **\~/.codex/config.toml** | Created from templates with profiles: SAFE / DEFAULT / YOLO / NO CHANGES option. See [Codex config reference](https://github.com/openai/codex/blob/main/docs/config.md). |
 | **AGENTS.md**             | Minimal rubric so agents consistently choose the right tool for each task.              |
 
 
@@ -67,6 +67,8 @@ During install, you can choose one of the profiles for `~/.codex/config.toml`:
 - DEFAULT (recommended): Balanced prompts and sandbox; network enabled in workspace
 - YOLO: Full access, never asks — includes explicit warnings and double‑confirm
 - NO CHANGES: Do not create or modify `~/.codex/config.toml`
+
+For all available options and advanced usage, see the [Codex config reference](https://github.com/openai/codex/blob/main/docs/config.md).
 
 ### After installing
 

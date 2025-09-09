@@ -403,6 +403,7 @@ write_codex_config() {
   run cp "$template_file" "$cfg"
 
   ok "Created ~/.codex/config.toml with ${selected_profile} profile"
+  info "See config options: https://github.com/openai/codex/blob/main/docs/config.md"
 }
 
 maybe_install_vscode_ext() {
