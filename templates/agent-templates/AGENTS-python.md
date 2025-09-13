@@ -3,7 +3,10 @@
 When you need to call tools from the shell, use this rubric:
 
 ## File & Text
-- Find Files: `fd`
+- Find files by file name: `fd`
+- Find files with path name: `fd -p <file-path>`
+- List files in a directory: `fd . <directory>`
+- Find files with extension and pattern: `fd -e <extension> <pattern>`
 - Find Text: `rg` (ripgrep)
 - Find Code Structure: `ast-grep`
   - Common languages:
