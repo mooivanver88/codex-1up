@@ -176,11 +176,13 @@ install_npm_globals() {
 
     # Detect installed version using npm ls --json and parse with node
     local installed
-    installed=$(npm ls -g "$pkg" --depth=0 --json 2>/dev/null | node -e '
+    local npm_output
+    npm_output=$(npm ls -g "$pkg" --depth=0 --json 2>/dev/null || echo '{}')
+    installed=$(echo "$npm_output" | node -e '
 let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{
   try{const j=JSON.parse(s); const name=process.argv[1]; const dep=j.dependencies&&j.dependencies[name]; console.log(dep?dep.version:"");}
   catch{console.log("")}
-});' "$pkg")
+});' "$pkg" 2>/dev/null || echo "")
 
     if [ -z "$installed" ]; then
       info "$pkg not installed; will install @$latest"
